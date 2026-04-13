@@ -386,6 +386,38 @@ body {
   flex-shrink: 0;
 }
 
+/* Strict Mode */
+.strict-mode-panel h3 {
+  cursor: help;
+}
+
+.strict-mode-status {
+  font-size: 0.75rem;
+  color: var(--accent);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.strict-mode-active {
+  border: 1px solid var(--accent);
+}
+
+.strict-mode-inputs {
+  display: flex;
+  gap: 12px;
+}
+
+.strict-mode-field {
+  flex: 1;
+}
+
+.strict-mode-field label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

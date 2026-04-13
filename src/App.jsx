@@ -3,6 +3,7 @@ import WorkTimer from './components/WorkTimer'
 import HistoryLog from './components/HistoryLog'
 import Settings from './components/Settings'
 import AlertsPanel from './components/AlertsPanel'
+import StrictMode from './components/StrictMode'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { useAlarmSound } from './hooks/useAlarmSound'
 import { formatTime } from './utils/formatTime'
@@ -14,6 +15,8 @@ export default function App() {
   const [multiplier, setMultiplier] = useLocalStorage('bt-multiplier', 1 / 3)
   const [history, setHistory] = useLocalStorage('bt-history', [])
   const [alertItems, setAlertItems] = useLocalStorage('bt-alerts', [])
+  const [strictStart, setStrictStart] = useLocalStorage('bt-strictStart', null)
+  const [strictEnd, setStrictEnd] = useLocalStorage('bt-strictEnd', null)
   const [breakStartTime, setBreakStartTime] = useLocalStorage('bt-breakStart', null)
   const [workStartTime, setWorkStartTime] = useLocalStorage('bt-workStart', null)
 
@@ -55,6 +58,30 @@ export default function App() {
       playAlarm(3000)
     }
   }, [mode, bankedBreakSeconds])
+
+  // Strict mode — alarm when idle during strict period
+  useEffect(() => {
+    if (!strictStart || !strictEnd || mode !== 'idle') return
+
+    const interval = setInterval(() => {
+      const now = new Date()
+      const nowMinutes = now.getHours() * 60 + now.getMinutes()
+      const [sh, sm] = strictStart.split(':').map(Number)
+      const [eh, em] = strictEnd.split(':').map(Number)
+      const startMin = sh * 60 + sm
+      const endMin = eh * 60 + em
+
+      const inWindow = startMin <= endMin
+        ? nowMinutes >= startMin && nowMinutes < endMin
+        : nowMinutes >= startMin || nowMinutes < endMin
+
+      if (inWindow) {
+        playAlarm(4000)
+      }
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [strictStart, strictEnd, mode, playAlarm])
 
   // Unified alert tick — handles countdowns, clock alarms, break alerts
   useEffect(() => {
@@ -236,6 +263,12 @@ export default function App() {
             onRemove={removeAlertItem}
             onToggle={toggleAlertItem}
             onResetItem={resetAlertItem}
+          />
+          <StrictMode
+            startTime={strictStart}
+            endTime={strictEnd}
+            onChangeStart={setStrictStart}
+            onChangeEnd={setStrictEnd}
           />
         </div>
       </main>
