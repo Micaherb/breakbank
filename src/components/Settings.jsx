@@ -17,7 +17,7 @@ export default function Settings({ multiplier, onMultiplierChange }) {
     { label: '1/4', value: 0.25 },
     { label: '1/3', value: 1 / 3 },
     { label: '1/2', value: 0.5 },
-    { label: '1:1', value: 1 },
+    { label: '1/1', value: 1 },
   ]
 
   if (!open) {
