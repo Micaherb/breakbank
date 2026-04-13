@@ -55,7 +55,7 @@ export default function App() {
   useEffect(() => {
     if (mode === 'break' && bankedBreakSeconds <= 0) {
       handleEndBreak()
-      playAlarm(3000)
+      playAlarm('breakDepleted')
     }
   }, [mode, bankedBreakSeconds])
 
@@ -76,7 +76,7 @@ export default function App() {
         : nowMinutes >= startMin || nowMinutes < endMin
 
       if (inWindow) {
-        playAlarm(4000)
+        playAlarm('strictBuzz')
       }
     }, 5000)
 
@@ -102,7 +102,7 @@ export default function App() {
           if (a.type === 'countdown' && a.running && a.remainingSeconds > 0) {
             const next = a.remainingSeconds - 1
             if (next <= 0) {
-              playAlarm(2000)
+              playAlarm('countdownDone')
               return { ...a, remainingSeconds: 0, running: false }
             }
             return { ...a, remainingSeconds: next }
@@ -110,13 +110,13 @@ export default function App() {
 
           // Clock alarm
           if (a.type === 'clock' && a.enabled && !a.fired && a.timeString === nowStr) {
-            playAlarm(3000)
+            playAlarm('clockAlarm')
             return { ...a, fired: true }
           }
 
           // Break bank threshold
           if (a.type === 'threshold' && a.enabled && !a.fired && breakBankSeconds >= a.thresholdSeconds) {
-            playAlarm(3000)
+            playAlarm('chime')
             return { ...a, fired: true }
           }
 
@@ -125,7 +125,7 @@ export default function App() {
             const [h, m] = a.targetTime.split(':').map(Number)
             const targetSeconds = h * 3600 + m * 60
             if (nowTotalSeconds + breakBankSeconds >= targetSeconds) {
-              playAlarm(3000)
+              playAlarm('chime')
               return { ...a, fired: true }
             }
           }
