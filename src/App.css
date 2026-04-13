@@ -1,0 +1,388 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #1a1a2e;
+  --surface: #16213e;
+  --surface-light: #1e2a47;
+  --primary: #0f3460;
+  --accent: #e94560;
+  --text: #eee;
+  --text-dim: #8892a4;
+  --break-bg: #1a2e1a;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #ef4444;
+  --radius: 12px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.app-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Timer Card */
+.timer-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 32px;
+  text-align: center;
+  margin-bottom: 20px;
+  transition: background 0.3s;
+}
+
+.timer-card.paused-mode {
+  background: #2e2218;
+}
+
+.timer-card.break-mode {
+  background: var(--break-bg);
+}
+
+.mode-indicator {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+}
+
+.break-mode .mode-indicator {
+  color: var(--success);
+}
+
+.timer-display {
+  margin-bottom: 16px;
+}
+
+.timer-label {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.timer-value {
+  font-size: 3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+.break-display .timer-value {
+  font-size: 2rem;
+  color: var(--success);
+}
+
+.timer-warning {
+  color: var(--danger) !important;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.timer-controls {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+/* Buttons */
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text);
+  background: var(--surface-light);
+}
+
+.btn:hover {
+  filter: brightness(1.2);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--accent);
+}
+
+.btn-secondary {
+  background: #2d4a6f;
+}
+
+.btn-break {
+  background: #166534;
+}
+
+.btn-danger {
+  background: #7f1d1d;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.btn-active {
+  outline: 2px solid var(--accent);
+}
+
+/* Panels */
+.side-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.panel h3 {
+  font-size: 1rem;
+  margin-bottom: 12px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 500;
+}
+
+.empty-state {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+/* History */
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.history-header h3 {
+  margin-bottom: 0;
+}
+
+.history-list {
+  max-height: 250px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--surface-light);
+  font-size: 0.85rem;
+  flex-wrap: nowrap;
+}
+
+.history-type-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  min-width: 42px;
+  text-align: center;
+}
+
+.history-work .history-type-badge {
+  background: var(--primary);
+  color: #93c5fd;
+}
+
+.history-break .history-type-badge {
+  background: #14532d;
+  color: var(--success);
+}
+
+.history-time {
+  color: var(--text-dim);
+  flex: 1;
+}
+
+.history-duration {
+  font-family: 'SF Mono', monospace;
+}
+
+.history-work .history-duration {
+  color: #93c5fd;
+}
+
+.history-break .history-duration {
+  color: var(--success);
+}
+
+.history-hide-btn {
+  padding: 2px 6px;
+  font-size: 0.85rem;
+  opacity: 0.4;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.history-item:hover .history-hide-btn {
+  opacity: 1;
+}
+
+.history-hidden {
+  opacity: 0.4;
+}
+
+/* Settings */
+.settings-panel {
+  margin-bottom: 16px;
+  border: 1px solid var(--primary);
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.setting-row label {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.setting-input {
+  background: var(--bg);
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.setting-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.small-input {
+  width: 70px;
+}
+
+.preset-buttons {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.setting-hint {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+.setting-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Side Timers & Alarms */
+.side-timer-add {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+.side-timer-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--surface-light);
+}
+
+.side-timer-item.timer-done {
+  opacity: 0.6;
+}
+
+.side-timer-label {
+  flex: 1;
+  font-size: 0.9rem;
+}
+
+.side-timer-time {
+  font-family: 'SF Mono', monospace;
+  font-size: 0.9rem;
+  min-width: 60px;
+  text-align: right;
+}
+
+.side-timer-controls {
+  display: flex;
+  gap: 4px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 3px;
+}
