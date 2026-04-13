@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import WorkTimer from './components/WorkTimer'
 import HistoryLog from './components/HistoryLog'
 import Settings from './components/Settings'
-import SideTimers from './components/SideTimers'
-import Alarms from './components/Alarms'
+import AlertsPanel from './components/AlertsPanel'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { useAlarmSound } from './hooks/useAlarmSound'
 import { formatTime } from './utils/formatTime'
@@ -11,17 +10,15 @@ import { formatTime } from './utils/formatTime'
 export default function App() {
   const [mode, setMode] = useLocalStorage('bt-mode', 'idle') // idle | working | break
   const [workSeconds, setWorkSeconds] = useLocalStorage('bt-workSeconds', 0) // current session only
-  const [bankedBreakSeconds, setBankedBreakSeconds] = useLocalStorage('bt-bankedBreak', 0) // accumulated break bank
+  const [bankedBreakSeconds, setBankedBreakSeconds] = useLocalStorage('bt-bankedBreak', 0)
   const [multiplier, setMultiplier] = useLocalStorage('bt-multiplier', 1 / 3)
   const [history, setHistory] = useLocalStorage('bt-history', [])
-  const [sideTimers, setSideTimers] = useLocalStorage('bt-sideTimers', [])
-  const [alarms, setAlarms] = useLocalStorage('bt-alarms', [])
+  const [alertItems, setAlertItems] = useLocalStorage('bt-alerts', [])
   const [breakStartTime, setBreakStartTime] = useLocalStorage('bt-breakStart', null)
   const [workStartTime, setWorkStartTime] = useLocalStorage('bt-workStart', null)
 
   const { play: playAlarm } = useAlarmSound()
 
-  // Break bank = saved bank + what current work session has earned so far
   const breakBankSeconds = bankedBreakSeconds + (mode === 'break' ? 0 : workSeconds * multiplier)
 
   // Main tick loop
@@ -59,50 +56,60 @@ export default function App() {
     }
   }, [mode, bankedBreakSeconds])
 
-  // Side timer tick
+  // Unified alert tick — handles countdowns, clock alarms, break alerts
   useEffect(() => {
-    const hasRunning = sideTimers.some((t) => t.running && t.remainingSeconds > 0)
-    if (!hasRunning) return
-
-    const interval = setInterval(() => {
-      setSideTimers((timers) =>
-        timers.map((t) => {
-          if (!t.running || t.remainingSeconds <= 0) return t
-          const next = t.remainingSeconds - 1
-          if (next <= 0) {
-            playAlarm(2000)
-            return { ...t, remainingSeconds: 0, running: false }
-          }
-          return { ...t, remainingSeconds: next }
-        })
-      )
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [sideTimers, setSideTimers, playAlarm])
-
-  // Clock alarm checker
-  useEffect(() => {
-    const hasActive = alarms.some((a) => a.enabled && !a.fired)
+    const hasActive = alertItems.some((a) =>
+      (a.type === 'countdown' && a.running && a.remainingSeconds > 0) ||
+      ((a.type === 'clock' || a.type === 'threshold' || a.type === 'lastsUntil') && a.enabled && !a.fired)
+    )
     if (!hasActive) return
 
     const interval = setInterval(() => {
       const now = new Date()
       const nowStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+      const nowTotalSeconds = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds()
 
-      setAlarms((als) =>
-        als.map((a) => {
-          if (a.enabled && !a.fired && a.timeString === nowStr) {
+      setAlertItems((items) =>
+        items.map((a) => {
+          // Countdown tick
+          if (a.type === 'countdown' && a.running && a.remainingSeconds > 0) {
+            const next = a.remainingSeconds - 1
+            if (next <= 0) {
+              playAlarm(2000)
+              return { ...a, remainingSeconds: 0, running: false }
+            }
+            return { ...a, remainingSeconds: next }
+          }
+
+          // Clock alarm
+          if (a.type === 'clock' && a.enabled && !a.fired && a.timeString === nowStr) {
             playAlarm(3000)
             return { ...a, fired: true }
           }
+
+          // Break bank threshold
+          if (a.type === 'threshold' && a.enabled && !a.fired && breakBankSeconds >= a.thresholdSeconds) {
+            playAlarm(3000)
+            return { ...a, fired: true }
+          }
+
+          // Break lasts until
+          if (a.type === 'lastsUntil' && a.enabled && !a.fired) {
+            const [h, m] = a.targetTime.split(':').map(Number)
+            const targetSeconds = h * 3600 + m * 60
+            if (nowTotalSeconds + breakBankSeconds >= targetSeconds) {
+              playAlarm(3000)
+              return { ...a, fired: true }
+            }
+          }
+
           return a
         })
       )
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [alarms, setAlarms, playAlarm])
+  }, [alertItems, setAlertItems, breakBankSeconds, playAlarm])
 
   const handleStart = () => {
     if (workSeconds === 0) {
@@ -114,15 +121,12 @@ export default function App() {
   const handlePause = () => setMode('idle')
 
   const handleStartBreak = () => {
-    // Log the work session
     if (workStartTime) {
       setHistory((h) => [...h, { id: crypto.randomUUID(), type: 'work', startedAt: workStartTime, duration: workSeconds }])
     }
-    // Bank the break time earned from this work session
     setBankedBreakSeconds((b) => b + workSeconds * multiplier)
     setWorkSeconds(0)
     setWorkStartTime(null)
-    // Start break
     setBreakStartTime(Date.now())
     setMode('break')
   }
@@ -152,13 +156,11 @@ export default function App() {
   }, [setHistory, setMode, setBreakStartTime, setWorkStartTime, setWorkSeconds])
 
   const handleReset = () => {
-    if (window.confirm('Reset everything? This clears all timers, history, and break bank.')) {
+    if (window.confirm('Reset work timer, break bank, and history?')) {
       setMode('idle')
       setWorkSeconds(0)
       setBankedBreakSeconds(0)
       setHistory([])
-      setSideTimers([])
-      setAlarms([])
       setBreakStartTime(null)
       setWorkStartTime(null)
     }
@@ -168,38 +170,39 @@ export default function App() {
     setHistory((h) => h.map((e) => e.id === id ? { ...e, hidden: !e.hidden } : e))
   }
 
-  // Side timer handlers
-  const addSideTimer = (label, totalSeconds) => {
-    setSideTimers((t) => [
-      ...t,
-      { id: Date.now(), label, totalSeconds, remainingSeconds: totalSeconds, running: false },
-    ])
+  // Unified alert handlers
+  const addAlertItem = ({ type, label, totalSeconds, timeString, thresholdSeconds, targetTime }) => {
+    const base = { id: Date.now(), type, label, enabled: true, fired: false }
+    if (type === 'countdown') {
+      setAlertItems((a) => [...a, { ...base, totalSeconds, remainingSeconds: totalSeconds, running: false }])
+    } else if (type === 'clock') {
+      setAlertItems((a) => [...a, { ...base, timeString }])
+    } else if (type === 'threshold') {
+      setAlertItems((a) => [...a, { ...base, thresholdSeconds }])
+    } else if (type === 'lastsUntil') {
+      setAlertItems((a) => [...a, { ...base, targetTime }])
+    }
   }
 
-  const removeSideTimer = (id) => {
-    setSideTimers((t) => t.filter((x) => x.id !== id))
+  const removeAlertItem = (id) => {
+    setAlertItems((a) => a.filter((x) => x.id !== id))
   }
 
-  const toggleSideTimer = (id) => {
-    setSideTimers((t) => t.map((x) => (x.id === id ? { ...x, running: !x.running } : x)))
+  const toggleAlertItem = (id) => {
+    setAlertItems((a) =>
+      a.map((x) => {
+        if (x.id !== id) return x
+        if (x.type === 'countdown') {
+          return { ...x, running: !x.running }
+        }
+        return { ...x, enabled: !x.enabled, fired: false }
+      })
+    )
   }
 
-  const resetSideTimer = (id) => {
-    setSideTimers((t) => t.map((x) => (x.id === id ? { ...x, remainingSeconds: x.totalSeconds, running: false } : x)))
-  }
-
-  // Alarm handlers
-  const addAlarm = (label, timeString) => {
-    setAlarms((a) => [...a, { id: Date.now(), label, timeString, enabled: true, fired: false }])
-  }
-
-  const removeAlarm = (id) => {
-    setAlarms((a) => a.filter((x) => x.id !== id))
-  }
-
-  const toggleAlarm = (id) => {
-    setAlarms((a) =>
-      a.map((x) => (x.id === id ? { ...x, enabled: !x.enabled, fired: false } : x))
+  const resetAlertItem = (id) => {
+    setAlertItems((a) =>
+      a.map((x) => (x.id === id ? { ...x, remainingSeconds: x.totalSeconds, running: false } : x))
     )
   }
 
@@ -227,18 +230,12 @@ export default function App() {
 
         <div className="side-panels">
           <HistoryLog history={history} onToggleHide={toggleHideHistory} />
-          <SideTimers
-            timers={sideTimers}
-            onAdd={addSideTimer}
-            onRemove={removeSideTimer}
-            onToggle={toggleSideTimer}
-            onReset={resetSideTimer}
-          />
-          <Alarms
-            alarms={alarms}
-            onAdd={addAlarm}
-            onRemove={removeAlarm}
-            onToggle={toggleAlarm}
+          <AlertsPanel
+            items={alertItems}
+            onAdd={addAlertItem}
+            onRemove={removeAlertItem}
+            onToggle={toggleAlertItem}
+            onResetItem={resetAlertItem}
           />
         </div>
       </main>

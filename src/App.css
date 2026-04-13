@@ -373,6 +373,19 @@ body {
   gap: 4px;
 }
 
+/* Alerts Panel */
+.alert-type-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.alert-type-badge {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
