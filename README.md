@@ -2,6 +2,8 @@
 
 A browser-based time tracker that helps you earn and manage break time while working.
 
+**Try it:** https://micaherb.github.io/breakbank/
+
 ## How it works
 
 Start the work timer and earn break time at a configurable rate (default: 1/3 of time worked). When you've banked enough, switch to break mode and your earned time counts down. An alarm sounds when your break runs out.
